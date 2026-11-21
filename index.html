@@ -1,0 +1,44 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2457d6"><link rel="apple-touch-icon" href="icon-192.png">
+<title>InternFlow</title><style>
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#666;--card:#f6f6f4;--bd:#ddd;--ok:#1a7f37;--warn:#9a6700;--acc:#2457d6}
+@media(prefers-color-scheme:dark){:root{--bg:#161616;--fg:#eee;--mut:#9a9a9a;--card:#222;--bd:#333;--ok:#4ac26b;--warn:#d4a72c;--acc:#7da2ff}}
+body{font:15px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--fg);margin:0;padding:16px;max-width:900px;margin-inline:auto}
+h1{font-size:20px;margin:0}.sub{color:var(--mut);font-size:13px;margin:2px 0 4px}.prog{font-size:13px;margin-bottom:10px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}input,select,button{padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--fg);font:inherit}
+input{flex:1;min-width:160px}button{cursor:pointer}.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px}
+.t{font-weight:600}.m{color:var(--mut);font-size:13px}.ok{color:var(--ok)}.warn{color:var(--warn)}.tag{font-size:11px;border:1px solid var(--bd);border-radius:6px;padding:1px 6px;margin-left:6px}
+.fresh{border-color:var(--acc);color:var(--acc)}a.b{display:inline-block;margin:6px 10px 0 0;color:var(--acc)}</style></head><body>
+<h1>InternFlow</h1><div class="sub" id="sub">Loading…</div><div class="prog" id="prog"></div>
+<div class="bar"><input id="q" placeholder="Search company or title">
+<select id="w"><option value="">All jobs</option><option value="fresh">New (alerted)</option></select>
+<select id="f"><option value="">Any sponsor status</option><option value="Sponsors">Sponsors (any)</option><option value="Sponsors in">Sponsors in my field</option><option value="new-company">Companies outside my list</option></select>
+<select id="s"><option value="">Any status</option><option>To apply</option><option>Applied</option><option>Interview</option><option>Skip</option></select>
+<select id="o"><option value="new">Newest first</option><option value="fit">Best fit first</option></select><button id="x">Export statuses</button><button id="c">Copy links (for autofill)</button></div>
+<div id="list"></div>
+<script>
+const $=id=>document.getElementById(id);let jobs=[],st={},meta=null,ap=[];const GOAL=1000,DEADLINE="2027-03-20";const nu=u=>{try{const x=new URL(u);return(x.host+x.pathname.replace(/\/(apply|application)(\/.*)?$/i,"").replace(/\/$/,"")).toLowerCase()}catch(e){return u}};let apSet=new Set();try{st=JSON.parse(localStorage.getItem("if_status")||"{}")}catch(e){}
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const m=location.hostname.match(/^(.+)\.github\.io$/),tailorUrl=m?`https://github.com/${m[1]}/${location.pathname.split('/')[1]}/actions/workflows/tailor.yml`:'#';
+const cur=j=>st[j.id]||(j.applied||apSet.has(nu(j.url))?"Applied":"To apply");
+function draw(){const q=$("q").value.toLowerCase(),w=$("w").value,f=$("f").value,s=$("s").value,o=$("o").value;
+ let r=jobs.filter(j=>(!q||(j.company+" "+j.title).toLowerCase().includes(q))&&(!w||j.fresh)&&(!s||cur(j)===s)&&(!f||(f==="new-company"?j.tag===f:j.status.startsWith(f))));
+ r.sort(o==="fit"?(a,b)=>b.score-a.score:(a,b)=>(b.posted||0)-(a.posted||0)||(b.first_seen>a.first_seen?1:-1));
+ $("list").innerHTML=r.slice(0,400).map(j=>{const c=cur(j),good=j.status.startsWith("Sponsors");
+ return `<div class="card"><div class="t">${esc(j.title)}${j.fresh?'<span class="tag fresh">new</span>':""}${j.tag==="new-company"?'<span class="tag">outside my list</span>':""}</div>
+ <div class="m">${esc(j.company)} · ${esc(j.location)} · ${esc(j.source)} · seen ${esc(j.first_seen)}</div>
+ <div class="${good?"ok":"warn"}">${good?"✅":"⚠️"} ${esc(j.status)} — ${esc(j.evidence)}</div>
+ <div class="m">Fit ${esc(j.score)}/100${j.why&&j.why.length?" · "+esc(j.why.join("; ")):""}</div>
+ <a class="b" href="${esc(j.url)}" target="_blank" rel="noopener">Open job</a><a class="b" href="${tailorUrl}" target="_blank" rel="noopener" onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(j.url)}')">Tailor resume</a>
+ <select data-id="${esc(j.id)}">${["To apply","Applied","Interview","Skip"].map(x=>`<option${x===c?" selected":""}>${x}</option>`).join("")}</select></div>`}).join("")||'<div class="m">Nothing matches.</div>';
+ const extra=ap.filter(a=>!jobs.some(j=>nu(j.url)===nu(a.url))).length,applied=jobs.filter(j=>cur(j)==="Applied").length+extra;
+ const wk=ap.filter(a=>Date.now()-Date.parse(a.at)<6048e5).length,left=Math.max(1,Math.ceil((Date.parse(DEADLINE)-Date.now())/864e5));
+ $("sub").textContent=`${r.length} of ${jobs.length} jobs`+(r.length>400?" (showing 400)":"")+(meta?` · last scan ${new Date(meta.last_run).toLocaleString()} · ${meta.sources.join(" · ")}`:"");
+ $("prog").textContent=`Applied: ${applied} / ${GOAL} · ${wk} this week · need about ${Math.ceil(Math.max(0,GOAL-applied)/left)}/day to finish by ${DEADLINE}`}
+["q","w","f","s","o"].forEach(i=>$(i).oninput=draw);
+$("list").onchange=e=>{const id=e.target.dataset.id;if(id){st[id]=e.target.value;try{localStorage.setItem("if_status",JSON.stringify(st))}catch(x){}draw()}};
+$("x").onclick=()=>{const rows=["company,title,status,url"].concat(jobs.filter(j=>cur(j)!=="To apply").map(j=>[j.company,j.title,cur(j),j.url].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")));
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([rows.join("\n")],{type:"text/csv"}));a.download="internflow-statuses.csv";a.click()};
+$("c").onclick=async()=>{const q=$("q").value.toLowerCase(),r=jobs.filter(j=>cur(j)==="To apply"&&(!q||(j.company+" "+j.title).toLowerCase().includes(q))).slice(0,50).map(j=>j.url).join("\n");try{await navigator.clipboard.writeText(r);$("c").textContent="Copied "+r.split("\n").length+" links"}catch(e){prompt("Copy:",r)}};
+Promise.all([fetch("jobs.json").then(r=>r.json()),fetch("meta.json").then(r=>r.json()).catch(()=>null),fetch("applied.json?"+Date.now()).then(r=>r.json()).catch(()=>[])]).then(([j,m,a])=>{jobs=j;meta=m;ap=a;apSet=new Set(a.map(x=>nu(x.url)));draw()}).catch(()=>$("sub").textContent="Could not load jobs.json yet. Run the GitHub workflow once.");
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script></body></html>
