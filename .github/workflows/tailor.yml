@@ -1,0 +1,23 @@
+name: Tailor resume and cover letter
+on:
+  workflow_dispatch:
+    inputs:
+      job_urls: { description: "Job links, one per line (or separated by spaces)", required: true }
+      job_text: { description: "Optional: paste the job description if the link can't be read", required: false }
+jobs:
+  tailor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      MASTER_RESUME: ${{ secrets.MASTER_RESUME }}
+      JOB_URLS: ${{ inputs.job_urls }}
+      JOB_TEXT: ${{ inputs.job_text }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests python-docx pypdf
+      - run: python tailor.py
