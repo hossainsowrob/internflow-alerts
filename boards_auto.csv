@@ -1,0 +1,213 @@
+company,type,token,url,confidence
+Stripe,greenhouse,stripe,,verified
+Dropbox,greenhouse,dropbox,,verified
+Okta,greenhouse,okta,,verified
+Twilio,greenhouse,twilio,,verified
+Block,greenhouse,block,,verified
+Chime,greenhouse,chime,,verified
+Cloudflare,greenhouse,cloudflare,,verified
+Coinbase,greenhouse,coinbase,,verified
+Databricks,greenhouse,databricks,,verified
+Datadog,greenhouse,datadog,,verified
+Elastic,greenhouse,elastic,,verified
+Experian,smartrecruiters,Experian,,verified
+MongoDB,greenhouse,mongodb,,verified
+Nasdaq,greenhouse,nasdaq,,verified
+Robinhood,greenhouse,robinhood,,verified
+ServiceNow,smartrecruiters,ServiceNow,,verified
+Snowflake,ashby,snowflake,,guess
+UiPath,ashby,uipath,,guess
+Wabtec,smartrecruiters,Wabtec,,verified
+Zscaler,greenhouse,zscaler,,verified
+AlixPartners,greenhouse,alixpartners,,verified
+Charles River Associates,greenhouse,charlesriverassociates,,verified
+Forvis Mazars,greenhouse,forvismazars,,verified
+Oliver Wyman,lever,oliverwyman,,guess
+Roland Berger,smartrecruiters,RolandBerger,,verified
+Pattern,lever,pattern,,guess
+PrizePicks,greenhouse,prizepicks,,verified
+Linkedin,lever,linkedin,,guess
+Bytedance,smartrecruiters,Bytedance,,verified
+Wayfair,smartrecruiters,Wayfair,,verified
+Pinterest,greenhouse,pinterest,,verified
+AbbVie,smartrecruiters,AbbVie,,verified
+Synechron,smartrecruiters,Synechron,,verified
+Zoox,lever,zoox,,guess
+Indeed,greenhouse,indeed,,verified
+Airbnb,greenhouse,airbnb,,verified
+Lyft,greenhouse,lyft,,verified
+Roblox,greenhouse,roblox,,verified
+Spotify,lever,spotify,,guess
+Social Finance,greenhouse,socialfinance,,verified
+Moloco,greenhouse,moloco,,verified
+Turner & Townsend,smartrecruiters,TurnerTownsend,,verified
+Verkada,greenhouse,verkada,,verified
+Waymo,greenhouse,waymo,,verified
+Weee!,greenhouse,weee,,verified
+ClinChoice,greenhouse,clinchoice,,verified
+Teladoc Health,smartrecruiters,TeladocHealth,,verified
+Samsara,greenhouse,samsara,,verified
+Riot Games,greenhouse,riotgames,,verified
+Blend360,smartrecruiters,Blend360,,verified
+PharmaACE,smartrecruiters,PharmaAce,,verified
+Natera,greenhouse,natera,,verified
+Upgrade,greenhouse,upgrade,,verified
+Gusto,greenhouse,gusto,,verified
+iPivot,smartrecruiters,Ipivot,,verified
+Affirm,greenhouse,affirm,,verified
+84 51,greenhouse,8451,,verified
+Oportun,greenhouse,oportun,,verified
+Duolingo,greenhouse,duolingo,,verified
+Reddit,greenhouse,reddit,,verified
+Asana,greenhouse,asana,,verified
+Qualtrics,greenhouse,qualtrics,,verified
+Asm,greenhouse,asm,,verified
+Beyond Finance,greenhouse,beyondfinance,,verified
+Saviynt,lever,saviynt,,guess
+Cognitiv,greenhouse,cognitiv,,verified
+Thumbtack,ashby,thumbtack,,guess
+Roku,greenhouse,roku,,verified
+Zuora,greenhouse,zuora,,verified
+Samsung Semiconductor,greenhouse,samsungsemiconductor,,verified
+Figma,greenhouse,figma,,verified
+DoubleVerify,greenhouse,doubleverify,,verified
+Smartsheet,greenhouse,smartsheet,,verified
+Anaplan,greenhouse,anaplan,,verified
+Uber Freight,greenhouse,uberfreight,,verified
+Arista Networks,smartrecruiters,AristaNetworks,,verified
+ActiveHours,smartrecruiters,ActiveHours,,verified
+Carvana,greenhouse,carvana,,verified
+Wellnecity,ashby,wellnecity,,guess
+Discord,greenhouse,discord,,verified
+Udemy,greenhouse,udemy,,verified
+Fns,greenhouse,fns,,verified
+Plaid,ashby,plaid,,guess
+CarGurus,greenhouse,cargurus,,verified
+AppLovin,greenhouse,applovin,,verified
+WorldQuant,greenhouse,worldquant,,verified
+Genesis,smartrecruiters,Genesis,,verified
+Gen Digital,ashby,gen-digital,,guess
+Scopely,greenhouse,scopely,,verified
+Nextdoor,greenhouse,nextdoor,,verified
+QuinStreet,greenhouse,quinstreet,,verified
+Scale AI,greenhouse,scaleai,,verified
+NerdWallet,ashby,nerdwallet,,guess
+Western Union,greenhouse,westernunion,,verified
+Braze,greenhouse,braze,,verified
+Jane Street,greenhouse,janestreet,,verified
+Activision Publishing,smartrecruiters,ActivisionPublishing,,verified
+Freshworks,smartrecruiters,Freshworks,,verified
+Zeta Global,greenhouse,zetaglobal,,verified
+Ivalua,greenhouse,ivalua,,verified
+Renesas Electronics,smartrecruiters,RenesasElectronics,,verified
+Komodo Health,greenhouse,komodohealth,,verified
+ProcDNA,smartrecruiters,ProcDNA,,verified
+Revolution Medicines,greenhouse,revolutionmedicines,,verified
+Inovalon,ashby,inovalon,,guess
+Socure,smartrecruiters,Socure,,verified
+Spreetail,lever,spreetail,,guess
+KikOff,greenhouse,kikoff,,verified
+Rubrik,greenhouse,rubrik,,verified
+Turner Construction,smartrecruiters,TurnerConstruction,,verified
+Commure,ashby,commure,,guess
+Klaviyo,greenhouse,klaviyo,,verified
+IntegriChain,smartrecruiters,IntegriChain,,verified
+GoodRx,ashby,goodrx,,guess
+Econtenti,smartrecruiters,Econtenti,,verified
+Avery Dennison,smartrecruiters,AveryDennison,,verified
+Santander,workday,,https://santander.wd3.myworkdayjobs.com/SantanderCareers,guess
+Doximity,greenhouse,doximity,,verified
+Flatiron Health,greenhouse,flatironhealth,,verified
+Stitch Fix,greenhouse,stitchfix,,verified
+Red Bull,smartrecruiters,RedBull,,verified
+Analytic Partners,smartrecruiters,ANALYTICPARTNERS,,verified
+Avride,greenhouse,avride,,verified
+HealthVerity,greenhouse,healthverity,,verified
+TTEC Digital,lever,ttecdigital,,guess
+Akuna Capital,greenhouse,akunacapital,,verified
+LiveMindz,smartrecruiters,LiveMindz,,verified
+TripAdvisor,greenhouse,tripadvisor,,verified
+Alnylam,smartrecruiters,Alnylam,,verified
+Brex,greenhouse,brex,,verified
+Pinnacle Technical Resources,smartrecruiters,PinnacleTechnicalResources,,verified
+Integration Developer Network,smartrecruiters,IntegrationDeveloperNetwork,,verified
+GenScript,greenhouse,genscript,,verified
+ServiceTitan,smartrecruiters,ServiceTitan,,verified
+LeanTaaS,lever,leantaas,,guess
+PrimeSource Building Products,smartrecruiters,PrimeSourceBuildingProducts,,verified
+Brunswick,ashby,brunswick,,guess
+Kimberly-Clark,smartrecruiters,KimberlyClark,,verified
+Cricut,smartrecruiters,Cricut,,verified
+Nuro,greenhouse,nuro,,verified
+Rhombus Power,greenhouse,rhombuspower,,verified
+AppFolio,ashby,appfolio,,guess
+Squarespace,greenhouse,squarespace,,verified
+Upwork,greenhouse,upwork,,verified
+Elsevier,greenhouse,elsevier,,verified
+Kioxia,smartrecruiters,Kioxia,,verified
+Quantium,greenhouse,quantium,,verified
+Servicelink,smartrecruiters,ServiceLink,,verified
+Jade Global,smartrecruiters,JadeGlobal,,verified
+Zefr,ashby,zefr,,guess
+SeatGeek,greenhouse,seatgeek,,verified
+BeiGene,smartrecruiters,BeiGene,,verified
+Kaseya,greenhouse,kaseya,,verified
+Cambridge Mobile Telematics,greenhouse,cambridgemobiletelematics,,verified
+Houzz,lever,houzz,,guess
+Blink Health,greenhouse,blinkhealth,,verified
+Caliber,greenhouse,caliber,,verified
+Unum,workday,,https://unum.wd1.myworkdayjobs.com/External,guess
+Zocdoc,greenhouse,zocdoc,,verified
+Scalian,smartrecruiters,Scalian,,verified
+TORC Robotics,greenhouse,torcrobotics,,verified
+Public Storage,smartrecruiters,PublicStorage,,verified
+Amplitude,ashby,amplitude,,guess
+Workato,greenhouse,workato,,verified
+Fivetran,greenhouse,fivetran,,verified
+Oscar,greenhouse,oscar,,verified
+Gallup,greenhouse,gallup,,verified
+Chowbus,greenhouse,chowbus,,verified
+Whoop,ashby,whoop,,guess
+Arthrex,smartrecruiters,Arthrex,,verified
+BigCommerce,smartrecruiters,Bigcommerce,,verified
+ActiveCampaign,lever,activecampaign,,guess
+Mercari,greenhouse,mercari,,verified
+Bold,greenhouse,bold,,verified
+Paraform,ashby,paraform,,guess
+Imc,greenhouse,imc,,verified
+Feedzai,greenhouse,feedzai,,verified
+Juniper Square,ashby,junipersquare,,guess
+Astera Labs,greenhouse,asteralabs,,verified
+Eikon Therapeutics,greenhouse,eikontherapeutics,,verified
+Crunchyroll,greenhouse,crunchyroll,,verified
+Choice Hotels,workday,,https://choicehotels.wd5.myworkdayjobs.com/External,guess
+Celonis,greenhouse,celonis,,verified
+Wealthfront,lever,wealthfront,,guess
+Optiver,greenhouse,optiver,,verified
+Masimo,smartrecruiters,Masimo,,verified
+Sigma Computing,greenhouse,sigmacomputing,,verified
+Vitesse,ashby,vitesse,,guess
+ChargePoint,greenhouse,chargepoint,,verified
+MedeAnalytics,greenhouse,medeanalytics,,verified
+Skydio,ashby,skydio,,guess
+Redwood Materials,greenhouse,redwoodmaterials,,verified
+SimpliSafe,greenhouse,simplisafe,,verified
+TaskRabbit,greenhouse,taskrabbit,,verified
+LendingTree,greenhouse,lendingtree,,verified
+CoreWeave,greenhouse,coreweave,,verified
+Formlabs,greenhouse,formlabs,,verified
+EasternCCTV,smartrecruiters,EasternCCTV,,verified
+Axs,greenhouse,axs,,verified
+Airwallex,ashby,airwallex,,guess
+Cirkul,greenhouse,cirkul,,verified
+Acumen,greenhouse,acumen,,verified
+Appian,greenhouse,appian,,verified
+ResMed,smartrecruiters,Resmed,,verified
+Epal,smartrecruiters,Epal,,verified
+Brightspeed,smartrecruiters,Brightspeed,,verified
+Canidium,smartrecruiters,Canidium,,verified
+Meter,ashby,meter,,guess
+Monster Energy,greenhouse,monsterenergy,,verified
+Mainspring Energy,lever,mainspringenergy,,guess
+Replimune,lever,replimune,,guess
+Traba,ashby,traba,,guess
