@@ -1,4 +1,4 @@
-"""InternFlow scanner. Runs on GitHub Actions 4x/day. Pulls internships from many sources, keeps the ones that fit
+"""InternFlow scanner. Runs on GitHub Actions every hour (6am-10pm ET). Pulls internships from many sources, keeps the ones that fit
 you at companies that sponsor H-1B/PERM, saves everything to jobs.json (dashboard) and sends new ones to Telegram."""
 import os, re, csv, json, html, time, datetime as dt, traceback
 from zoneinfo import ZoneInfo
@@ -137,12 +137,13 @@ def run():
     # Simplify/Adzuna/JSearch timestamps can be wrong (re-listed old jobs), so check the employer's own page before alerting
     DIRECT = {"Greenhouse", "Lever", "Ashby", "Smartrecruiters", "Workday"}; cut = dt.datetime.fromtimestamp(now - C.MAX_AGE_HOURS * 3600, dt.timezone.utc).date(); kept = []
     for a in alerts:
-        if a["source"] in DIRECT: kept.append(a); continue
-        real = S.verify_age(a["url"])
+        if a["source"] in DIRECT and a["posted"]: kept.append(a); continue   # board gave a real posted date: trust it
+        real = S.verify_age(a["url"])                          # no date from the board (or non-direct source): ask the job page itself
         if real:
             a["posted"] = dt.datetime(real.year, real.month, real.day, tzinfo=dt.timezone.utc).timestamp(); a["posted_exact"] = False
             if real >= cut: kept.append(a)                    # page confirms it is recent
             else: a["fresh"] = False                          # page says it is old: keep on dashboard, no alert
+        elif a["source"] in DIRECT: kept.append(a)             # new on a board we already watch, page shows no date: counts as just appeared
         elif a["source"].startswith("Simplify"): a["fresh"] = False   # Simplify's own time can't be trusted and the page has no date
         else: a["unverified"] = True; kept.append(a)
     alerts = kept
