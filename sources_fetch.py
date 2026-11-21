@@ -108,17 +108,18 @@ def adzuna():
 def jsearch():
     """Google-for-Jobs data: LinkedIn, Indeed, Glassdoor, ZipRecruiter, company sites. Free tier is small, so it runs
     only on the first scan of each day and uses the first JSEARCH_QUERIES searches."""
-    k, out = os.environ.get("RAPIDAPI_KEY"), []
+    k, out, err = os.environ.get("RAPIDAPI_KEY"), [], None
     if not k or os.environ.get("RUN_JSEARCH") != "1": return out
     for q in C.SEARCHES[:int(os.environ.get("JSEARCH_QUERIES", "5"))]:
         r = requests.get("https://jsearch.p.rapidapi.com/search", timeout=60, headers={"X-RapidAPI-Key": k, "X-RapidAPI-Host": "jsearch.p.rapidapi.com"},
                          params={"query": f"{q} in USA", "date_posted": "3days", "num_pages": "1"})
-        if r.status_code != 200: continue
+        if r.status_code != 200: err = err or f"HTTP {r.status_code} {r.text[:100]}"; continue
         for j in r.json().get("data", []):
             if INTERN_RE.search(j.get("job_title", "")) and j.get("job_apply_link"):
                 loc = ", ".join(x for x in (j.get("job_city"), j.get("job_state")) if x) or ("Remote" if j.get("job_is_remote") else "")
                 out.append(P("js-" + j["job_id"], j.get("employer_name"), j["job_title"], loc, j["job_apply_link"],
                              "via " + (j.get("job_publisher") or "JSearch"), (j.get("job_description") or "")[:3000], j.get("job_posted_at_timestamp")))
+    if err and not out: raise RuntimeError(err)               # tell the scan summary why JSearch gave nothing (wrong key, not subscribed, quota)
     return out
 
 

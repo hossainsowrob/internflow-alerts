@@ -96,16 +96,24 @@ def run():
     covered = {rc["name"] for n in boards.values() if (rc := resolve(n))}
     missing = [c["name"] for c in comps if c["name"] not in covered]
 
+    dead = state.get("dead", {}); dead_hits = []                  # boards that keep returning 404/410 are skipped for 14 days instead of failing every hour
+    skip = lambda k: (d := dead.get(k)) and d["n"] >= 2 and now - d["at"] < 14 * 86400
+    bk = lambda it: "|".join(it[0])
+    live = {k: v for k, v in boards.items() if not skip("|".join(k))}; n_dead = len(boards) - len(live)
     def poll(item):
         (typ, tok, url), name = item
         try: return S.poll_board(name, typ, tok, url), None
-        except Exception as e: return [], f"{name} ({typ}): {str(e)[:60]}"
-    wd_items = [it for it in boards.items() if it[0][0] == "workday"]; other = [it for it in boards.items() if it[0][0] != "workday"]
+        except Exception as e:
+            if "404" in str(e) or "410" in str(e): dead_hits.append(bk(item))
+            return [], f"{name} ({typ}): {str(e)[:60]}"
+    wd_items = [it for it in live.items() if it[0][0] == "workday"]; other = [it for it in live.items() if it[0][0] != "workday"]
     with ThreadPoolExecutor(8) as ex: results = list(ex.map(poll, other))
     with ThreadPoolExecutor(2) as ex: results += list(ex.map(poll, wd_items))    # Workday rate-limits hard (429): go slowly, 2 at a time
+    for k in dead_hits: d = dead.get(k, {"n": 0}); dead[k] = {"n": d["n"] + 1, "at": now}
+    for k in [k for k in dead if k not in dead_hits and any(bk(it) == k for it in live.items())]: dead.pop(k, None)   # recovered boards come back
     ok = sum(1 for _, e in results if not e); board_posts = [p for r, _ in results for p in r]
     errors += [e for _, e in results if e]; postings += board_posts
-    report.append(f"company boards {ok}/{len(boards)} ok ({len(board_posts)} internships)"); report.append(f"{len(covered)}/{len(comps)} watchlist companies tracked directly")
+    report.append(f"company boards {ok}/{len(live)} ok ({len(board_posts)} internships)" + (f", {n_dead} dead links skipped" if n_dead else "")); report.append(f"{len(covered)}/{len(comps)} watchlist companies tracked directly")
     for fn, label, needs in ((S.adzuna, "Adzuna", "ADZUNA_APP_ID"), (S.jsearch, "JSearch", "RAPIDAPI_KEY")):
         if not os.environ.get(needs): report.append(f"{label} off"); continue
         if label == "Adzuna" and os.environ.get("RUN_ADZUNA", "1") != "1": continue
@@ -153,7 +161,7 @@ def run():
 
     # save state + dashboard data
     state = {"seen": {k: v for k, v in seen.items() if now - v < 150 * 86400},
-             "boards": sorted(known_boards | {f"{key(n)}|{t}" for (t, _, _), n in boards.items()})}
+             "boards": sorted(known_boards | {f"{key(n)}|{t}" for (t, _, _), n in boards.items()}), "dead": dead}
     # dashboard = today's jobs only (Eastern day). Anything from an earlier day is deleted, except jobs found in the last 8 hours
     # (so a job posted at 11pm is still there at 5am). Old/unconfirmed jobs that failed the age check never reach the dashboard.
     day = prev_day if prev_day.get("date") == today else {"date": today, "pulled": 0, "skipped_old": 0}
@@ -168,7 +176,11 @@ def run():
     status_line = html.escape(" · ".join(report))
     notes = ""
     if not employers: notes += "\n⚠️ Sponsor data not loaded: only your watchlist companies are shown, marked unverified" + (f"; {held} other jobs held back." if held else ".")
-    if len(errors) > max(5, len(boards) // 4): notes += f"\n⚠️ {len(errors)} sources failed (e.g. {html.escape(errors[0])})"
+    n429 = sum("429" in e for e in errors); n404 = sum("404" in e or "410" in e for e in errors); other = len(errors) - n429 - n404
+    if n429 + other > max(8, len(live) // 4):                     # dead links are normal and silent; only warn about real problems
+        notes += f"\n⚠️ {n429} boards rate-limited, {other} other errors (e.g. {html.escape(errors[0])}). They are retried next hour."
+    for e in errors:
+        if e.startswith("JSearch"): notes += f"\n⚠️ {html.escape(e)}"
     if not alerts:
         if os.environ.get("HEARTBEAT") == "1" or notes:   # hourly scans stay silent unless something is wrong; one daily check-in
             telegram(f"InternFlow: no new matching internships this scan. {max(0, len(new_jobs) - len(alerts))} older or unconfirmed postings skipped.\n<i>{status_line}</i>{notes}")
