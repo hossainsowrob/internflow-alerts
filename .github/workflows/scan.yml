@@ -1,0 +1,51 @@
+name: InternFlow scan
+on:
+  schedule: [{ cron: "7 * * * *" }]   # every hour (UTC). The gate below keeps only 6am-10pm Eastern, in winter and summer.
+  workflow_dispatch:
+    inputs:
+      test: { description: "Only send a Telegram test message", type: boolean, default: false }
+permissions: { contents: write }
+concurrency: { group: internflow, cancel-in-progress: false }
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+      ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+      RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      MASTER_RESUME: ${{ secrets.MASTER_RESUME }}
+    steps:
+      - id: gate
+        run: |
+          H=$(TZ=America/New_York date +%-H); D=$(TZ=America/New_York date +%u)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || { [ "$H" -ge 6 ] && [ "$H" -le 22 ]; }; then echo "go=true" >> $GITHUB_OUTPUT; else echo "go=false" >> $GITHUB_OUTPUT; fi
+          if [ ! -f boards_auto.csv ] || { [ "$H" = "6" ] && [ "$D" = "1" ]; }; then echo "discover=1" >> $GITHUB_OUTPUT; else echo "discover=0" >> $GITHUB_OUTPUT; fi
+          if [ "$H" = "7" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then echo "jsearch=1" >> $GITHUB_OUTPUT; echo "heartbeat=1" >> $GITHUB_OUTPUT; else echo "jsearch=0" >> $GITHUB_OUTPUT; echo "heartbeat=0" >> $GITHUB_OUTPUT; fi
+          case "$H" in 7|10|13|16|19) echo "adzuna=1" >> $GITHUB_OUTPUT;; *) echo "adzuna=0" >> $GITHUB_OUTPUT;; esac
+      - if: steps.gate.outputs.go == 'true'
+        uses: actions/checkout@v4
+      - if: steps.gate.outputs.go == 'true'
+        uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - if: steps.gate.outputs.go == 'true'
+        run: pip install requests openpyxl python-docx pypdf
+      - if: steps.gate.outputs.go == 'true' && inputs.test
+        run: TEST=1 python scan.py
+      - if: steps.gate.outputs.go == 'true' && !inputs.test
+        run: test -f employers.json || python build_sponsors.py --auto
+        continue-on-error: true
+      - if: steps.gate.outputs.go == 'true' && !inputs.test && steps.gate.outputs.discover == '1'
+        run: python discover.py
+        continue-on-error: true
+      - if: steps.gate.outputs.go == 'true' && !inputs.test
+        run: python scan.py
+        env: { RUN_JSEARCH: "${{ steps.gate.outputs.jsearch }}", RUN_ADZUNA: "${{ steps.gate.outputs.adzuna }}", HEARTBEAT: "${{ steps.gate.outputs.heartbeat }}" }
+      - if: steps.gate.outputs.go == 'true' && !inputs.test
+        run: |
+          git config user.name "internflow-bot"; git config user.email "bot@users.noreply.github.com"
+          git add applied.json jobs.json meta.json state.json employers.json boards_auto.csv discover_state.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "scan $(date -u +%F-%H%M)" && git pull --rebase -q && git push)
