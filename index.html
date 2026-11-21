@@ -7,8 +7,9 @@ h1{font-size:20px;margin:0}.sub{color:var(--mut);font-size:13px;margin:2px 0 4px
 .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}input,select,button{padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--fg);font:inherit}
 input{flex:1;min-width:160px}button{cursor:pointer}.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px}
 .t{font-weight:600}.m{color:var(--mut);font-size:13px}.ok{color:var(--ok)}.warn{color:var(--warn)}.tag{font-size:11px;border:1px solid var(--bd);border-radius:6px;padding:1px 6px;margin-left:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0 10px}.stat{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px}.stat b{display:block;font-size:22px;line-height:1.1}.stat span{color:var(--mut);font-size:12px}
 .fresh{border-color:var(--acc);color:var(--acc)}a.b{display:inline-block;margin:6px 10px 0 0;color:var(--acc)}</style></head><body>
-<h1>InternFlow</h1><div class="sub" id="sub">Loading…</div><div class="prog" id="prog"></div>
+<h1>InternFlow</h1><div class="sub" id="sub">Loading…</div><div class="stats" id="stats"></div><div class="prog" id="prog"></div>
 <div class="bar"><input id="q" placeholder="Search company or title">
 <select id="w"><option value="">All jobs</option><option value="fresh">New (alerted)</option></select>
 <select id="f"><option value="">Any sponsor status</option><option value="Sponsors">Sponsors (any)</option><option value="Sponsors in">Sponsors in my field</option><option value="new-company">Companies outside my list</option></select>
@@ -30,9 +31,11 @@ function draw(){const q=$("q").value.toLowerCase(),w=$("w").value,f=$("f").value
  <div class="m">Fit ${esc(j.score)}/100${j.why&&j.why.length?" · "+esc(j.why.join("; ")):""}</div>
  <a class="b" href="${esc(j.url)}" target="_blank" rel="noopener">Open job</a><a class="b" href="${tailorUrl}" target="_blank" rel="noopener" onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(j.url)}')">Tailor resume</a>
  <select data-id="${esc(j.id)}">${["To apply","Applied","Interview","Skip"].map(x=>`<option${x===c?" selected":""}>${x}</option>`).join("")}</select></div>`}).join("")||'<div class="m">Nothing matches.</div>';
- const extra=ap.filter(a=>!jobs.some(j=>nu(j.url)===nu(a.url))).length,applied=jobs.filter(j=>cur(j)==="Applied").length+extra;
+ const applied=ap.length+jobs.filter(j=>st[j.id]==="Applied"&&!apSet.has(nu(j.url))).length;
  const wk=ap.filter(a=>Date.now()-Date.parse(a.at)<6048e5).length,left=Math.max(1,Math.ceil((Date.parse(DEADLINE)-Date.now())/864e5));
- $("sub").textContent=`${r.length} of ${jobs.length} jobs`+(r.length>400?" (showing 400)":"")+(meta?` · last scan ${new Date(meta.last_run).toLocaleString()} · ${meta.sources.join(" · ")}`:"");
+ $("sub").textContent=`Showing ${r.length} of ${jobs.length} jobs from today`+(r.length>400?" (showing 400)":"")+(meta?` · last scan ${new Date(meta.last_run).toLocaleString()} · ${meta.sources.join(" · ")}`:"");
+ const d0=new Date().toDateString(),aToday=ap.filter(a=>new Date(a.at).toDateString()===d0).length,td=(meta&&meta.today)||{},pulled=td.pulled??jobs.length;
+ $("stats").innerHTML=[[aToday,"applied today"],[wk,"applied this 7 days"],[applied+" / "+GOAL,"total applied"],[pulled,"new jobs pulled today"],[jobs.filter(j=>cur(j)==="To apply").length,"still to apply"],[td.skipped_old??0,"old jobs skipped today"]].map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("");
  $("prog").textContent=`Applied: ${applied} / ${GOAL} · ${wk} this week · need about ${Math.ceil(Math.max(0,GOAL-applied)/left)}/day to finish by ${DEADLINE}`}
 ["q","w","f","s","o"].forEach(i=>$(i).oninput=draw);
 $("list").onchange=e=>{const id=e.target.dataset.id;if(id){st[id]=e.target.value;try{localStorage.setItem("if_status",JSON.stringify(st))}catch(x){}draw()}};

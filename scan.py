@@ -1,6 +1,7 @@
 """InternFlow scanner. Runs on GitHub Actions 4x/day. Pulls internships from many sources, keeps the ones that fit
 you at companies that sponsor H-1B/PERM, saves everything to jobs.json (dashboard) and sends new ones to Telegram."""
 import os, re, csv, json, html, time, datetime as dt, traceback
+from zoneinfo import ZoneInfo
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from lib import *
@@ -58,10 +59,10 @@ def norm_posted(v):
 
 # ---------- main ----------
 def run():
-    now = time.time(); today = dt.date.today().isoformat()
+    now = time.time(); today = dt.datetime.now(ZoneInfo("America/New_York")).date().isoformat()   # "today" = Eastern calendar day
     comps = list(csv.DictReader(open(ROOT / "companies.csv")))
     jobs = jload("jobs.json", []); state = jload("state.json", {"seen": {}, "boards": []})
-    seen, known_boards = state["seen"], set(state["boards"])
+    seen, known_boards = state["seen"], set(state["boards"]); prev_day = state.get("day", {})
     seen_urls = {j["url"] for j in jobs}; seen_titles = {key(j["company"]) + "|" + j["title"].lower().strip() for j in jobs}
 
     wl = defaultdict(list)                                       # first token -> [(tokens, company)]
@@ -129,7 +130,7 @@ def run():
         seen[p["id"]] = now; seen_titles.add(tkey); run_urls.add(p["url"])
         fresh = (now - posted <= C.MAX_AGE_HOURS * 3600) if posted else (p["board"] in known_boards)
         job = dict(id=p["id"], company=p["company"], title=p["title"], location=p["location"], url=p["url"], score=sc, why=why,
-                   status=st, evidence=ev, tag=tag, source=p["source"], first_seen=today, posted=posted, fresh=fresh, applied=False)
+                   status=st, evidence=ev, tag=tag, source=p["source"], first_seen=today, found_at=now, posted=posted, fresh=fresh, applied=False)
         new_jobs.append(job)
         if fresh: alerts.append(job)
 
@@ -151,12 +152,16 @@ def run():
     # save state + dashboard data
     state = {"seen": {k: v for k, v in seen.items() if now - v < 150 * 86400},
              "boards": sorted(known_boards | {f"{key(n)}|{t}" for (t, _, _), n in boards.items()})}
+    # dashboard = today's jobs only (Eastern day). Anything from an earlier day is deleted, except jobs found in the last 8 hours
+    # (so a job posted at 11pm is still there at 5am). Old/unconfirmed jobs that failed the age check never reach the dashboard.
+    day = prev_day if prev_day.get("date") == today else {"date": today, "pulled": 0, "skipped_old": 0}
+    day["pulled"] += len(alerts); day["skipped_old"] += max(0, len(new_jobs) - len(alerts)); state["day"] = day
     jsave("state.json", state, separators=(",", ":"))
-    cutoff = (dt.date.today() - dt.timedelta(days=60)).isoformat()
-    jobs = new_jobs + [j for j in jobs if j.get("first_seen", "9") >= cutoff or j.get("applied")]
+    keep = lambda j: j.get("found_at") and (j.get("first_seen") == today or now - j["found_at"] < C.MAX_AGE_HOURS * 3600)
+    jobs = alerts + [j for j in jobs if keep(j) and j["id"] not in {a["id"] for a in alerts}]
     jsave("jobs.json", jobs, separators=(",", ":"))
     jsave("meta.json", {"last_run": dt.datetime.now(dt.timezone.utc).isoformat(), "scanned": len(postings), "new": len(new_jobs), "alerts": len(alerts),
-                        "sources": report, "sponsor_data": bool(employers), "untracked": missing})
+                        "today": day, "sources": report, "sponsor_data": bool(employers), "untracked": missing})
 
     status_line = html.escape(" · ".join(report))
     notes = ""
@@ -164,7 +169,7 @@ def run():
     if len(errors) > max(5, len(boards) // 4): notes += f"\n⚠️ {len(errors)} sources failed (e.g. {html.escape(errors[0])})"
     if not alerts:
         if os.environ.get("HEARTBEAT") == "1" or notes:   # hourly scans stay silent unless something is wrong; one daily check-in
-            telegram(f"InternFlow: no new matching internships this scan. {len(new_jobs)} older open ones added to the dashboard.\n<i>{status_line}</i>{notes}")
+            telegram(f"InternFlow: no new matching internships this scan. {max(0, len(new_jobs) - len(alerts))} older or unconfirmed postings skipped.\n<i>{status_line}</i>{notes}")
     else:
         alerts.sort(key=lambda a: -a["score"]); shown = alerts[:C.MAX_ALERTS_PER_RUN]
         head = f"<b>InternFlow: {len(alerts)} new internship{'s' if len(alerts) != 1 else ''}</b>"
