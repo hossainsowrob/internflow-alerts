@@ -51,3 +51,5 @@ AUTO_TAILOR_MIN_SCORE = 55      # only jobs that fit this well get a resume + co
 AUTO_TAILOR_MAX_PER_RUN = 4     # keeps API cost small
 APPLY_GOAL = 1000
 APPLY_DEADLINE = "2027-03-20"   # the date you want 1000 applications done by
+
+WORKDAY_BUDGET_MIN = 12   # max minutes per scan spent on Workday boards (the rest roll over to the next hourly run)

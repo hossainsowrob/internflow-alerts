@@ -80,7 +80,7 @@ def poll_board(name, typ, token, url):
         m = re.match(r"https://([^.]+)\.(wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([^/?]+)", url)
         tenant, wd, site = m.groups(); base = f"https://{tenant}.{wd}.myworkdayjobs.com"; data = []
         for off in range(0, 160, 20):
-            for wait in (0, 8, 20, 40):
+            for wait in (0, 6, 15):
                 time.sleep(wait); r = requests.post(f"{base}/wday/cxs/{tenant}/{site}/jobs", timeout=40, headers=UA,
                                   json={"appliedFacets": {}, "limit": 20, "offset": off, "searchText": "intern"})
                 if r.status_code != 429: break      # rate limited: wait and retry

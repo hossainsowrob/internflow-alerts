@@ -108,12 +108,17 @@ def run():
             return [], f"{name} ({typ}): {str(e)[:60]}"
     wd_items = [it for it in live.items() if it[0][0] == "workday"]; other = [it for it in live.items() if it[0][0] != "workday"]
     with ThreadPoolExecutor(8) as ex: results = list(ex.map(poll, other))
-    with ThreadPoolExecutor(2) as ex: results += list(ex.map(poll, wd_items))    # Workday rate-limits hard (429): go slowly, 2 at a time
+    # Workday rate-limits hard (429), so it gets a fixed time budget. Boards not reached are done first on the next hourly run.
+    cur = state.get("wd_cur", 0) % max(1, len(wd_items)); wd_items = wd_items[cur:] + wd_items[:cur]; deadline = time.time() + C.WORKDAY_BUDGET_MIN * 60
+    def poll_wd(it): return ([], "SKIP") if time.time() > deadline else poll(it)
+    with ThreadPoolExecutor(3) as ex: wd_res = list(ex.map(poll_wd, wd_items))
+    wd_skipped = sum(1 for _, e in wd_res if e == "SKIP"); results += [r for r in wd_res if r[1] != "SKIP"]
+    wd_cur = (cur + len(wd_items) - wd_skipped) % max(1, len(wd_items))
     for k in dead_hits: d = dead.get(k, {"n": 0}); dead[k] = {"n": d["n"] + 1, "at": now}
     for k in [k for k in dead if k not in dead_hits and any(bk(it) == k for it in live.items())]: dead.pop(k, None)   # recovered boards come back
     ok = sum(1 for _, e in results if not e); board_posts = [p for r, _ in results for p in r]
     errors += [e for _, e in results if e]; postings += board_posts
-    report.append(f"company boards {ok}/{len(live)} ok ({len(board_posts)} internships)" + (f", {n_dead} dead links skipped" if n_dead else "")); report.append(f"{len(covered)}/{len(comps)} watchlist companies tracked directly")
+    report.append(f"company boards {ok}/{len(live)} ok ({len(board_posts)} internships)" + (f", {n_dead} dead links skipped" if n_dead else "") + (f", {wd_skipped} Workday boards next run" if wd_skipped else "")); report.append(f"{len(covered)}/{len(comps)} watchlist companies tracked directly")
     for fn, label, needs in ((S.adzuna, "Adzuna", "ADZUNA_APP_ID"), (S.jsearch, "JSearch", "RAPIDAPI_KEY")):
         if not os.environ.get(needs): report.append(f"{label} off"); continue
         if label == "Adzuna" and os.environ.get("RUN_ADZUNA", "1") != "1": continue
@@ -161,7 +166,7 @@ def run():
 
     # save state + dashboard data
     state = {"seen": {k: v for k, v in seen.items() if now - v < 150 * 86400},
-             "boards": sorted(known_boards | {f"{key(n)}|{t}" for (t, _, _), n in boards.items()}), "dead": dead}
+             "boards": sorted(known_boards | {f"{key(n)}|{t}" for (t, _, _), n in boards.items()}), "dead": dead, "wd_cur": wd_cur}
     # dashboard = today's jobs only (Eastern day). Anything from an earlier day is deleted, except jobs found in the last 8 hours
     # (so a job posted at 11pm is still there at 5am). Old/unconfirmed jobs that failed the age check never reach the dashboard.
     day = prev_day if prev_day.get("date") == today else {"date": today, "pulled": 0, "skipped_old": 0}
