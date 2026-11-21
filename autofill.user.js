@@ -21,6 +21,13 @@
 // @match        *://*.recruitee.com/*
 // @match        *://*.paylocity.com/*
 // @match        *://*.dayforcehcm.com/*
+// @match        *://*.ultipro.com/*
+// @match        *://*.ukg.com/*
+// @match        *://*.adp.com/*
+// @match        *://*.workforcenow.adp.com/*
+// @match        *://*.applytojob.com/*
+// @match        *://*.rippling.com/*
+// @match        *://*.teamtailor.com/*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_xmlhttpRequest
