@@ -111,7 +111,11 @@
     document.querySelectorAll("input, textarea, select").forEach((el) => {
       if (el.dataset.ifFilled || el.disabled || el.readOnly || !visible(el)) return;
       const type = (el.type || "").toLowerCase();
-      if (["hidden", "submit", "button", "checkbox", "password", "file", "image", "reset"].includes(type)) return;
+      if (type === "password") {   // account create / sign-in: only if you saved an account password in ⚙ (stays on this device)
+        const pw = store.get("acct_pw", ""); if (pw && !el.value && !/\b(old|current)\b/.test(labelOf(el).replace(/current-password/g, ""))) { setVal(el, pw); el.dataset.ifFilled = 1; n++; }
+        return;
+      }
+      if (["hidden", "submit", "button", "checkbox", "file", "image", "reset"].includes(type)) return;
       const lbl = labelOf(el); const want = valueFor(lbl, p); if (!want) return;
       if (type === "radio") {
         if (want.yn === undefined || done.has(el.name)) return; done.add(el.name);
@@ -236,6 +240,8 @@
     <div class="modal" id="m"><div class="box"><b>InternFlow settings</b> <span style="color:#777;font-size:12px">(saved only on this device)</span><div id="fs"></div>
     <label>Portfolio URL (details and resume are read from here)</label><input id="pu"><div class="row"><button class="set" id="sy" style="border:1px solid #bbb">Sync from portfolio now</button></div><div id="pn" style="font-size:12px;color:#555;margin-top:4px"></div>
     <label>Or upload a resume yourself (overrides the one on your portfolio)</label><input type="file" id="rf" accept=".pdf,.doc,.docx"><div id="rn" style="font-size:12px;color:#555"></div>
+    <b style="display:block;margin-top:14px">Job-site accounts</b>
+    <label>Password to use when a site makes you create an account (saved only in this browser, never sent anywhere)</label><input id="ap" type="password" autocomplete="off">
     <b style="display:block;margin-top:14px">Application tracking</b>
     <label>GitHub username</label><input id="go"><label>Repository name</label><input id="gr" placeholder="internflow"><label>GitHub token (fine-grained, this repo only, Contents: read &amp; write)</label><input id="gt" type="password">
     <div class="row"><button class="set" id="x" style="border:1px solid #bbb">Cancel</button><button class="fill" id="sv">Save</button></div></div></div>`;
@@ -245,13 +251,13 @@
   function openSettings() {
     const p = P(), mo = manual(), g = store.get("gh", {}); root.querySelectorAll("[data-k]").forEach((i) => { i.value = mo[i.dataset.k] || ""; i.placeholder = p[i.dataset.k] || ""; });
     $("pu").value = PORTFOLIO(); const pf = store.get("pf", {}); $("pn").textContent = pf.email || pf.first ? `Read from portfolio: ${[pf.first, pf.last].filter(Boolean).join(" ")} · ${pf.email || "no email found"} · ${pf.phone || "no phone found"}` : "Nothing read from the portfolio yet";
-    $("go").value = g.owner || ""; $("gr").value = g.repo || ""; $("gt").value = g.token || ""; const r = store.get("resume", null); $("rn").textContent = r ? (store.get("resume_manual", false) ? "Your upload: " : "From portfolio: ") + r.name : "No resume found yet"; $("m").classList.add("on");
+    $("go").value = g.owner || ""; $("gr").value = g.repo || ""; $("gt").value = g.token || ""; $("ap").value = store.get("acct_pw", ""); const r = store.get("resume", null); $("rn").textContent = r ? (store.get("resume_manual", false) ? "Your upload: " : "From portfolio: ") + r.name : "No resume found yet"; $("m").classList.add("on");
   }
   $("s").onclick = openSettings; $("x").onclick = () => $("m").classList.remove("on");
   $("rf").onchange = (e) => { const f = e.target.files[0]; if (!f) return; if (f.size > 4e6) return alert("Resume must be under 4 MB"); const fr = new FileReader();
     fr.onload = () => { store.set("resume", { name: f.name, type: f.type || "application/pdf", b64: String(fr.result).split(",")[1] }); store.set("resume_manual", true); $("rn").textContent = "Your upload: " + f.name; }; fr.readAsDataURL(f); };
   $("sv").onclick = () => { const p = {}; root.querySelectorAll("[data-k]").forEach((i) => (p[i.dataset.k] = i.value.trim())); store.set("profile", p);
-    store.set("portfolio_url", $("pu").value.trim()); store.set("gh", { owner: $("go").value.trim(), repo: $("gr").value.trim(), token: $("gt").value.trim() }); $("m").classList.remove("on"); toast("Saved"); retryPending(); };
+    store.set("acct_pw", $("ap").value); store.set("portfolio_url", $("pu").value.trim()); store.set("gh", { owner: $("go").value.trim(), repo: $("gr").value.trim(), token: $("gt").value.trim() }); $("m").classList.remove("on"); toast("Saved"); retryPending(); };
   $("f").onclick = () => { const r = fill(); toast(`Filled ${r.n} field${r.n === 1 ? "" : "s"}` + (r.left ? ` · ${r.left} required left for you (outlined red)` : "") + ". Check everything, then submit."); };
   $("a").onclick = () => markApplied(true);
   $("sy").onclick = () => { $("pn").textContent = "Reading…"; store.set("portfolio_url", $("pu").value.trim()); syncPortfolio(true, (err, pf) => { $("pn").textContent = err || `Read: ${[pf.first, pf.last].filter(Boolean).join(" ") || "no name"} · ${pf.email || "no email"} · ${pf.phone || "no phone"}${pf._resume ? " · resume found" : " · no resume link found"}`; }); };
