@@ -100,8 +100,9 @@ def run():
         (typ, tok, url), name = item
         try: return S.poll_board(name, typ, tok, url), None
         except Exception as e: return [], f"{name} ({typ}): {str(e)[:60]}"
-    with ThreadPoolExecutor(8) as ex:
-        results = list(ex.map(poll, boards.items()))
+    wd_items = [it for it in boards.items() if it[0][0] == "workday"]; other = [it for it in boards.items() if it[0][0] != "workday"]
+    with ThreadPoolExecutor(8) as ex: results = list(ex.map(poll, other))
+    with ThreadPoolExecutor(2) as ex: results += list(ex.map(poll, wd_items))    # Workday rate-limits hard (429): go slowly, 2 at a time
     ok = sum(1 for _, e in results if not e); board_posts = [p for r, _ in results for p in r]
     errors += [e for _, e in results if e]; postings += board_posts
     report.append(f"company boards {ok}/{len(boards)} ok ({len(board_posts)} internships)"); report.append(f"{len(covered)}/{len(comps)} watchlist companies tracked directly")

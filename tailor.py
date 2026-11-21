@@ -68,13 +68,18 @@ Return ONLY JSON: {"name":str,"contact":str,"summary":str (empty string if not u
 "notes":{"matched_keywords":[str],"job_requirements_not_in_resume":[str],"bullets_needing_metrics":[str]}}"""
 
 def call_claude(master, jd, title, company):
-    r = requests.post("https://api.anthropic.com/v1/messages", timeout=180, headers={
-        "x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
-        json={"model": MODEL, "max_tokens": 4000, "system": SYSTEM, "messages": [{"role": "user", "content":
-              f"JOB TITLE: {title}\nCOMPANY: {company}\n\nJOB DESCRIPTION:\n{jd[:9000]}\n\nMASTER RESUME:\n{master}"}]})
-    if r.status_code != 200: raise RuntimeError(f"Anthropic API {r.status_code}: {r.text[:200]}")
-    txt = "".join(b.get("text", "") for b in r.json()["content"])
-    return json.loads(txt[txt.index("{"): txt.rindex("}") + 1])
+    msgs = [{"role": "user", "content": f"JOB TITLE: {title}\nCOMPANY: {company}\n\nJOB DESCRIPTION:\n{jd[:9000]}\n\nMASTER RESUME:\n{master}"}]
+    last = None
+    for attempt in range(3):                                   # the model occasionally returns slightly broken JSON: retry instead of failing
+        r = requests.post("https://api.anthropic.com/v1/messages", timeout=180, headers={
+            "x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
+            json={"model": MODEL, "max_tokens": 8000, "temperature": 0.3 if attempt else 0.7, "system": SYSTEM, "messages": msgs})
+        if r.status_code != 200: raise RuntimeError(f"Anthropic API {r.status_code}: {r.text[:200]}")
+        txt = "".join(b.get("text", "") for b in r.json()["content"])
+        try: return json.loads(txt[txt.index("{"): txt.rindex("}") + 1], strict=False)
+        except Exception as e:
+            last = e; msgs = msgs[:1] + [{"role": "assistant", "content": txt}, {"role": "user", "content": "That was not valid JSON (" + str(e)[:80] + "). Return the complete answer again as ONE valid JSON object only: escape every double quote inside strings with a backslash, no line breaks inside strings, no trailing commas, no text outside the JSON."}]
+    raise RuntimeError(f"model returned invalid JSON 3 times: {last}")
 
 def unsupported_numbers(out, master):
     have = set(re.findall(r"\d[\d,.]*%?", master))

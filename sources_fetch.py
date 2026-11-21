@@ -80,7 +80,7 @@ def poll_board(name, typ, token, url):
         m = re.match(r"https://([^.]+)\.(wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([^/?]+)", url)
         tenant, wd, site = m.groups(); base = f"https://{tenant}.{wd}.myworkdayjobs.com"; data = []
         for off in range(0, 160, 20):
-            for wait in (0, 4, 10):
+            for wait in (0, 8, 20, 40):
                 time.sleep(wait); r = requests.post(f"{base}/wday/cxs/{tenant}/{site}/jobs", timeout=40, headers=UA,
                                   json={"appliedFacets": {}, "limit": 20, "offset": off, "searchText": "intern"})
                 if r.status_code != 429: break      # rate limited: wait and retry
@@ -126,6 +126,12 @@ def jsearch():
 def verify_age(url):
     """Return the date (datetime.date) the employer's page says the job was posted, or None if it can't be found."""
     import datetime as dt, html as H
+    w = re.match(r"https://([^./]+)\.(wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([^/?]+)(/job/[^?]+)", url)
+    if w:                                                       # Workday pages are built by JavaScript, so ask its own job API for the start date
+        try:
+            t, wd, site, path = w.groups(); info = get_json(f"https://{t}.{wd}.myworkdayjobs.com/wday/cxs/{t}/{site}{path}")["jobPostingInfo"]
+            if info.get("startDate"): return dt.datetime.strptime(info["startDate"][:10], "%Y-%m-%d").date()
+        except Exception: pass
     try: page = requests.get(url, timeout=20, headers=UA).text
     except Exception: return None
     cands = re.findall(r'"datePosted"\s*:\s*"([^"]+)"', page)
