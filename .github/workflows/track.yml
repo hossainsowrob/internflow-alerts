@@ -1,0 +1,24 @@
+name: Track application
+on:
+  repository_dispatch:
+    types: [applied]
+permissions: { contents: write }
+concurrency: { group: track, cancel-in-progress: false }
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests
+      - run: python track.py
+      - run: |
+          git config user.name "internflow-bot"; git config user.email "bot@users.noreply.github.com"
+          git add applied.json
+          git diff --cached --quiet || (git commit -m "applied" && for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done)
