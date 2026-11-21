@@ -99,7 +99,7 @@ def run():
         (typ, tok, url), name = item
         try: return S.poll_board(name, typ, tok, url), None
         except Exception as e: return [], f"{name} ({typ}): {str(e)[:60]}"
-    with ThreadPoolExecutor(16) as ex:
+    with ThreadPoolExecutor(8) as ex:
         results = list(ex.map(poll, boards.items()))
     ok = sum(1 for _, e in results if not e); board_posts = [p for r, _ in results for p in r]
     errors += [e for _, e in results if e]; postings += board_posts
@@ -133,6 +133,21 @@ def run():
         new_jobs.append(job)
         if fresh: alerts.append(job)
 
+    # Simplify/Adzuna/JSearch timestamps can be wrong (re-listed old jobs), so check the employer's own page before alerting
+    DIRECT = {"Greenhouse", "Lever", "Ashby", "Smartrecruiters", "Workday"}; cut = dt.datetime.fromtimestamp(now - C.MAX_AGE_HOURS * 3600, dt.timezone.utc).date(); kept = []
+    for a in alerts:
+        if a["source"] in DIRECT: kept.append(a); continue
+        real = S.verify_age(a["url"])
+        if real:
+            a["posted"] = dt.datetime(real.year, real.month, real.day, tzinfo=dt.timezone.utc).timestamp(); a["posted_exact"] = False
+            if real >= cut: kept.append(a)                    # page confirms it is recent
+            else: a["fresh"] = False                          # page says it is old: keep on dashboard, no alert
+        elif a["source"].startswith("Simplify"): a["fresh"] = False   # Simplify's own time can't be trusted and the page has no date
+        else: a["unverified"] = True; kept.append(a)
+    alerts = kept
+    for j in jobs:                                           # an alert stops being 'new' after its scan
+        if j.get("fresh"): j["fresh"] = False
+
     # save state + dashboard data
     state = {"seen": {k: v for k, v in seen.items() if now - v < 150 * 86400},
              "boards": sorted(known_boards | {f"{key(n)}|{t}" for (t, _, _), n in boards.items()})}
@@ -155,7 +170,10 @@ def run():
         head = f"<b>InternFlow: {len(alerts)} new internship{'s' if len(alerts) != 1 else ''}</b>"
         msg = head
         for a in shown:
-            ago = f"posted {max(1, int((now - a['posted']) / 3600))}h ago · " if a["posted"] else "just appeared · "
+            if a.get("posted_exact") is False: ago = f"posted {dt.datetime.fromtimestamp(a['posted'], dt.timezone.utc).strftime('%b %d')} (per job page) · "
+            elif a.get("unverified"): ago = "age not confirmed on job page · "
+            elif a["posted"]: ago = f"posted {max(1, int((now - a['posted']) / 3600))}h ago · "
+            else: ago = "just appeared · "
             blk = (f"\n\n{'🆕 NEW COMPANY · ' if a['tag'] == 'new-company' else '⭐ '}<b>{html.escape(a['title'])}</b>\n"
                    f"{ago}{html.escape(a['company'])} · {html.escape(a['location'] or 'n/a')} · {html.escape(a['source'])}\n"
                    f"{BADGE.get(a['status'], '⚠️')} {html.escape(a['status'])}: {html.escape(a['evidence'][:150])}\n"

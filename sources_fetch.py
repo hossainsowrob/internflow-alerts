@@ -80,8 +80,10 @@ def poll_board(name, typ, token, url):
         m = re.match(r"https://([^.]+)\.(wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([^/?]+)", url)
         tenant, wd, site = m.groups(); base = f"https://{tenant}.{wd}.myworkdayjobs.com"; data = []
         for off in range(0, 160, 20):
-            r = requests.post(f"{base}/wday/cxs/{tenant}/{site}/jobs", timeout=40, headers=UA,
-                              json={"appliedFacets": {}, "limit": 20, "offset": off, "searchText": "intern"})
+            for wait in (0, 4, 10):
+                time.sleep(wait); r = requests.post(f"{base}/wday/cxs/{tenant}/{site}/jobs", timeout=40, headers=UA,
+                                  json={"appliedFacets": {}, "limit": 20, "offset": off, "searchText": "intern"})
+                if r.status_code != 429: break      # rate limited: wait and retry
             r.raise_for_status(); page = r.json().get("jobPostings", []); data += page
             if len(page) < 20: break
         url = f"{base}/{site}"
@@ -118,3 +120,21 @@ def jsearch():
                 out.append(P("js-" + j["job_id"], j.get("employer_name"), j["job_title"], loc, j["job_apply_link"],
                              "via " + (j.get("job_publisher") or "JSearch"), (j.get("job_description") or "")[:3000], j.get("job_posted_at_timestamp")))
     return out
+
+
+# ---------- check the job's own page for its real posting date ----------
+def verify_age(url):
+    """Return the date (datetime.date) the employer's page says the job was posted, or None if it can't be found."""
+    import datetime as dt, html as H
+    try: page = requests.get(url, timeout=20, headers=UA).text
+    except Exception: return None
+    cands = re.findall(r'"datePosted"\s*:\s*"([^"]+)"', page)
+    txt = H.unescape(re.sub(r"(?s)<[^>]+>", " ", page))
+    cands += re.findall(r"Posted(?: on)?:?\s+([A-Z][a-z]{2,8}\.? \d{1,2}, \d{4})", txt)
+    cands += re.findall(r"Posted(?: on)?:?\s+(\d{4}-\d{2}-\d{2})", txt)
+    for c in cands:
+        c = c.strip()
+        for fmt, n in (("%Y-%m-%d", 10), ("%B %d, %Y", None), ("%b %d, %Y", None), ("%b. %d, %Y", None)):
+            try: return dt.datetime.strptime(c[:n] if n else c, fmt).date()
+            except ValueError: pass
+    return None

@@ -28,7 +28,10 @@ def jload(name, default):
 def jsave(name, obj, **kw): json.dump(obj, open(ROOT / name, "w"), **kw)
 
 def get_json(url, **kw):
-    r = requests.get(url, timeout=40, headers=UA, **kw); r.raise_for_status(); return r.json()
+    for wait in (0, 4, 10):
+        time.sleep(wait); r = requests.get(url, timeout=40, headers=UA, **kw)
+        if r.status_code != 429: break          # 429 = rate limited: wait and retry
+    r.raise_for_status(); return r.json()
 
 def telegram(text):
     if DRY_RUN or not (TG_TOKEN and TG_CHAT):
