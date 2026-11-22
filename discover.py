@@ -72,6 +72,7 @@ def run():
         w = csv.DictWriter(f, fieldnames=["company", "type", "token", "url", "confidence"]); w.writeheader(); w.writerows(auto.values())
     jsave("discover_state.json", state)
     missing = [c["name"] for c in comps if c["name"] not in auto and c["name"] not in manual]
+    if not found: print("discovery: nothing new"); return        # stay quiet unless something new was found
     telegram(f"🔎 InternFlow board discovery: found direct job boards for {found} more companies. "
              f"{len(comps) - len(missing)} of {len(comps)} companies are now tracked directly.\n"
              f"{len(missing)} use career sites I can't read automatically (they are still covered through Simplify/Adzuna/JSearch, with some delay). "
